@@ -91,8 +91,8 @@ Note that this setup has been tested on MacOS Ventura 13.6.
     - In order to deploy everything including the compute pools, services, volumes, jobs and needed streamlit table for feedback, you can run `./configure_project.sh --action=deploy_all`. After starting up Ray, the code will deploy Vicuna 13B model on Ray Serve. This is a synchronous job, so the `configure_project.sh` execution will appear as if it is hung, when it actually is not (this should take around 10 minutes to fully deploy Vicuna 13B model on Ray Serve). In order to see its status, either 
         * Navigate to Snowsight Query History and look for the query `EXECUTE SERVICE IN COMPUTE POOL VICUNA13B_RAY_HEAD_POOL';`
         * Or execute the commands in `get_job_status.sql`.
-    - Once the script execution finishes, the script will spit out URLs for Ray head node (ray dashboard, jupyter notebook, grafana, prometheus and RayServe API); as well as URL for Streamlit app. Browse to those URLs. These URLs are public but authenticated by user's Snowflake username/password. 
-        * For accessing Ray Serve API inside the SPCS Ray cluster, open the `notebook` url from terminal output in browser and upload the notebook `ui/notebooks/test_local_vicuna13b_16ktokens_chat.ipynb` to `/home/snowflake` location within jupyter.  
+    - Once the script execution finishes, the script will spit out URLs for Ray head node (ray dashboard, jupyter notebook, grafana, prometheus and RayServe API); as well as URL for Streamlit app. Browse to those URLs. These URLs are public but authenticated by user's Snowflake username/password. Alternatively, you can also get these urls by putting the following in Snowflake worksheet: `call get_service_public_endpoints('<your_database>', '<your_schema>', ‘streamlit');` for the streamlit endpoint and `call get_service_public_endpoints('<your_database>', '<your_schema>', spcs_ray_custom_head_service');` for the Ray dashboard/jupyter notebook/grafana/prometheus/rayserveapi endpoints.
+        * For accessing Ray Serve API inside the SPCS Ray cluster, open the `notebook` url from terminal output in browser and upload the notebook `ui/notebooks/test_local_vicuna13b_16ktokens_chat.ipynb` to `/home/snowflake` location within jupyter. The default jupyter password is admin.
         * For accessing Streamlit app, open the `streamlit` url from the terminal output in browser and directly interact with the model. This streamlit app does not have any existing prompt.
         ![Streamlit on SPCS](images/llm_spcs_ray.mov.gif?raw=true "Streamlit on SPCS")
         * The Grafana dashboard will be available at `<https://GRAFANA_PUBLIC_URI>/d/rayDefaultDashboard/?var-datasource=Prometheus`. Default username/password for grafana is admin/admin. The first time you login into that url, you will see an error saying you need dashboard:read permission. Just login on the right with the admin/admin as username/password for grafana and then you will be able to see the dashboard. See that dashboard below.
@@ -100,6 +100,25 @@ Note that this setup has been tested on MacOS Ventura 13.6.
     - In order to tear down everything including the compute pools, services, volumes, and needed streamlit table for feedback, you can run `./configure_project.sh --action=drop_all`.
     - Alternatively, in order to just tear down just the services while keeping the compute pools intact, you can run `./configure_project.sh --action=drop_services`. Note that this will result in compute pools getting suspended after 2 minutes which is the configured time after which the compute pool will auto shutdown if there is no service active on it. 
 
+## Troubleshooting topics:
+Here are a few things that might happen during this setup. If they do, please follow the solutions below. In case your topic is not covered, see the next section on where to get help.
+
+1. No space left on device 
+    - The docker images in this repo are nvidia/cuda:11.8.0-devel-ubuntu22.04 images, which are quite heavy in size. If no space left on device issue occurs (another indication of this is that it might fail at `RUN pip3 install -r usecase_requirements.txt` during docker build), you must increase the available disk space on Docker Desktop. In Docker desktop, go to Settings -> Resources -> Virtual Disk Limit.
+
+    ![Docker Desktop Space](images/docker_desktop_space.png?raw=true "Docker Desktop Space") 
+
+2. Requested number of nodes X exceeds the node limit for the account 
+    - This might indicate that your account doesn't have enough GPU_3 and GPU_7 assigned. You just need 1 GPU_3 compute pool and 1 GPU_7 compute pool with 2 instances. Please reach out to me for help and I will get in touch with the responsible folks.
+
+3. Could not connect to Snowflake backend, aborting
+    - This means that you might be having internet connecting issues, or snowsql is not properly configured.
+
+4. Failed reading *.yaml in stage
+    - This might mean that the docker images might not have been built and pushed correctly. Please retry by typing `./configure_project.sh --action=deploy_all`
+
+5. SQL compilation error: An active warehouse is required for creating Python Stored Procedure
+    - This might mean that the warehouse name specified in the snowsql config connection is either incorrect, or the user does not have a default warehouse assigned. Please configure snowsql properly or provide a default warehouse for the snowflake user.
 
 ## Where to get help
 This repo automates Ray on SPCS setup. If you come across any issues, please reach out to puneet.lakhanpal@snowflake.com. I would love to hear any feedback how this experience can be further improved. I will be pushing this repo on GIT, so please create an issue in GIT if you come across any issues.
