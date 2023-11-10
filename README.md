@@ -1,13 +1,11 @@
 # Ray open source setup in SPCS
-This repo automates the setup of Ray on Snowpark Container Services. It also loads the Vicuna13B model, which has a context length of 16K tokens as a Ray Serve API on SPCS.  This big model being served as a Ray Serve API on SPCS, with multiple GPUs working in parallel, is shown in the GIF below.
+This repo automates the setup of [Ray](https://docs.ray.io/en/latest/index.html) on Snowpark Container Services. It also loads the Vicuna13B model, which has a context length of 16K tokens as a Ray Serve API on SPCS.  This model needs a lot of GPU memory while inferencing, which cannot be served on easily available GPU infrastructure. The 8 GPUs are not coming from a single expensive GPU_10 node, infact, there are two smaller GPU7 nodes, each having 4 GPUs, which are making a Ray cluster connected to a single GPU3 Ray head node. This way, we can scale with smaller instances with GPUs whenever we have high GPU memory needs. 
+
+In the GIF below, see how big the prompt is which is being fed into the Ray Serve API deployed on SPCS, with 8 GPUs working in parallel.
 
 ![Streamlit on SPCS](images/llm_spcs_ray.mov.gif?raw=true "Streamlit on SPCS")
 
-Read more about ray here: https://docs.ray.io/en/latest/index.html 
-
-In short, Ray is an open-source unified framework for scaling AI and Python applications. It provides the compute layer for parallel processing so that you don’t need to be a distributed systems expert.
-
-In the screenshot below, what you see is that there are 8 GPUs running in parallel to infer on 16K token prompt. The 8 GPUs are not coming from a single node, infact, there are two smaller GPU7 nodes, each having 4 GPUs, which are making a Ray cluster connected to a single GPU3 Ray head node. This way, we can scale with smaller instances with GPUs whenever we have high GPU memory needs.
+The following screenshot shows a static image of the GPUs in action.
 
 ![Ray on SPCS](images/ray_dashboard_once_setup.png?raw=true "Ray on SPCS") 
 
