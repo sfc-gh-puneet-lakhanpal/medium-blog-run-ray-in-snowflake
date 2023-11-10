@@ -1,0 +1,20 @@
+spec:
+  containers:
+  - name: worker
+    image: <<repository_url>>/ray_worker_v27
+    volumeMounts:
+    - name: dshm
+      mountPath: /dev/shm
+    - name: snowmlhome
+      mountPath: /home/snowflake/
+    env:
+        RAY_HEAD_ADDRESS: spcs-ray-custom-head-service:6379
+        HF_TOKEN: <<hf_token>>
+  volumes:
+  - name: dshm
+    source: memory
+    size: 20.16Gi
+  - name: snowmlhome
+    source: "@SNOWML_HOME"
+  networkPolicyConfig:
+    allowInternetEgress: true

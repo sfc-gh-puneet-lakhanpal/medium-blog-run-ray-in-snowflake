@@ -1,0 +1,25 @@
+spec:
+  containers:
+  - name: vllm
+    image: <<repository_url>>/rayservevllmvicuna13b
+    volumeMounts:
+    - name: dshm
+      mountPath: /dev/shm
+    env:
+      HF_TOKEN: <<hf_token>>
+      HF_MODEL: lmsys/vicuna-13b-v1.5-16k
+    args:
+      - python3
+      - main.py
+      - deploy_app
+      - "--url=ray://spcs-ray-custom-head-service:10001"
+  volumes:
+  - name: dshm
+    source: memory
+    size: 10.16Gi
+  endpoints:
+  - name: api
+    port: 8000
+    public: true
+  networkPolicyConfig:
+    allowInternetEgress: true

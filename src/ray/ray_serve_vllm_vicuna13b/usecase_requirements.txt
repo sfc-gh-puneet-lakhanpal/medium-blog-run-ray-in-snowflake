@@ -1,0 +1,7 @@
+fire==0.4.0
+mypy==0.971
+fastapi
+accelerate
+huggingface_hub
+vllm==0.2.0
+xformers==0.0.22

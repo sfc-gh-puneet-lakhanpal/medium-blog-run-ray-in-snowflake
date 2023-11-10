@@ -1,0 +1,12 @@
+spec:
+  containers:
+    - name: streamlit
+      image: <<repository_url>>/streamlit
+      env:
+        RAY_API_URL: http://spcs-ray-custom-head-service:8000/vicuna13bapi/
+        SNOWFLAKE_FEEDBACK_TABLE: ST_FEEDBACK
+        SNOWFLAKE_WAREHOUSE: FCTO_SHARED
+  endpoints:
+    - name: streamlit
+      port: 8501
+      public: true

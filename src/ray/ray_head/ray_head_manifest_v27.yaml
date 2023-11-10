@@ -1,0 +1,62 @@
+spec:
+  containers:
+  - name: head
+    image: <<repository_url>>/ray_head_v27
+    volumeMounts:
+    - name: dshm
+      mountPath: /dev/shm
+    - name: snowmlhome
+      mountPath: /home/snowflake/
+    - name: raylogs
+      mountPath: /raylogs
+    resources:
+      requests:
+        nvidia.com/gpu: 1
+      limits:
+        nvidia.com/gpu: 1
+    env:
+      ENV_RAY_GRAFANA_HOST: "http://spcs-ray-custom-head-service:3000"
+      ENV_RAY_PROMETHEUS_HOST: "http://spcs-ray-custom-head-service:9090"
+      HF_TOKEN: <<hf_token>>
+  - name: prometheus
+    image: <<repository_url>>/prometheus
+    volumeMounts:
+    - name: raylogs
+      mountPath: /raylogs
+  - name: grafana
+    image: <<repository_url>>/grafana
+    volumeMounts:
+    - name: raylogs
+      mountPath: /raylogs
+  volumes:
+  - name: dshm
+    source: memory
+    size: 20.16Gi
+  - name: snowmlhome
+    source: "@<<artifacts_stage>>"
+  - name: raylogs
+    source: "@ray_logs"
+  endpoints:
+  - name: notebook
+    port: 8888
+    public: true
+  - name: add-ray-nodes
+    port: 6379
+    public: false
+  - name: client
+    port: 10001
+    public: false
+  - name: ray-dashboard
+    port: 8265
+    public: true
+  - name: prometheus
+    port: 9090
+    public: true
+  - name: grafana
+    port: 3000
+    public: true
+  - name: rayserveapi
+    port: 8000
+    public: true
+  networkPolicyConfig:
+    allowInternetEgress: true

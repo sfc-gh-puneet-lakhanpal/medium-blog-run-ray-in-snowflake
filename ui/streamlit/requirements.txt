@@ -1,0 +1,7 @@
+streamlit
+requests==2.25.1
+streamlit-feedback
+snowflake-snowpark-python
+pandas
+python-dotenv
+altair
