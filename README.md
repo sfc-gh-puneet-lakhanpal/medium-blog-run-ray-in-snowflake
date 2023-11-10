@@ -1,12 +1,31 @@
 # Ray open source setup in SPCS
+This repo automates the setup of Ray on Snowpark Container Services. It also loads the Vicuna13B model, which has a context length of 16K tokens as a Ray Serve API on SPCS. 
+
+
 Read more about ray here: https://docs.ray.io/en/latest/index.html 
 
 In short, Ray is an open-source unified framework for scaling AI and Python applications. It provides the compute layer for parallel processing so that you don’t need to be a distributed systems expert.
 
-The power of Ray on SPCS is shown on the image below.
+The power of Ray on SPCS is shown on the image below. What you see in the screenshot is that there are 8 GPUs running in parallel to infer on 16K token prompt. The 8 GPUs are not coming from a single node, infact, there are two smaller GPU7 nodes, each having 4 GPUs, which are making a Ray cluster connected to a single GPU3 Ray head node. This way, we can scale with smaller instances with GPUs whenever we have high GPU memory needs.
 
 ![Ray on SPCS](images/ray_dashboard_once_setup.png?raw=true "Ray on SPCS") 
 
+## Motivation
+
+The Ray open source community and the managed Ray offering, Anyscale, have published a plethora of blog posts on why Ray makes sense for distributing workloads. The following table highlights a few of the posts that made me fall in love with Ray, and motivated me to bring Ray into SPCS.
+
+| Area             | Topic                                                | Context                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data Engineering | Modin with Ray                                       | On Oct 23, Snowflake announced the intent to acquire Ponder, which will boost Python capabilities in the Data Cloud. As mentioned in the Snowflake blog, Ponder maintains [Modin](https://www.snowflake.com/blog/snowpark-ml-api-python-develops-more/), a widely-used open-source library for scalable Pandas operations. Modin is able to leverage Ray on top of SPCS to distribute pandas-based operations. For more details on this topic, see [here](https://github.com/modin-project/modin/blob/master/examples/tutorial/jupyter/execution/pandas_on_ray/local/exercise_2.ipynb). I tested open source Modin on Ray within SPCS and saw nice performance improvements compared to pandas, but that’s a blog topic for another day. |
+| AI / ML          | Deep Learning batch inference                        | In [this post](https://www.anyscale.com/blog/offline-batch-inference-comparing-ray-apache-spark-and-sagemaker) from the Anyscale team, benchmarking was performed on deep learning batch inferencing on Ray vs Spark (Databricks runtime v12.0, with Apache Spark 3.3.1). IRay outperformed Spark by 2x in a Spark single cluster setup, and 3.2x in a Spark multi-cluster setup.                                                                                                                                                                                                                                                                                                                                                        |
+| AI / ML          | Distributed Model Training and Hyperparameter Tuning | Ray enables data scientists to perform distributed model training and hyperparameter tuning. For more details, see [here](https://xgboost.readthedocs.io/en/stable/tutorials/ray.html) and [here](https://docs.ray.io/en/latest/train/examples/horovod/horovod_example.html).                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| LLM              | Serving LLM APIs on Ray Serve                        | With Ray Serve continuous batching and vLLM, [this post](https://www.anyscale.com/blog/continuous-batching-llm-inference) shows how LLM inference can be 23x faster with reduced p50 latency by using continuous batching functionality in Ray Serve, combined with vLLM.                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| LLM              | Parallel fine tuning of LLMs                         | With Ray TorchTrainer, LLM practitioners can perform parallel fine-tuning (a full parameter or LoRA) on open source LLMs. See [here](https://github.com/ray-project/ray/tree/master/doc/source/templates/04_finetuning_llms_with_deepspeed) for an example where Llama-2 fine tuning (7B, 13B or 70B) is demonstrated using TorchTrainer and DeepSpeed ZeRO-3 strategy.                                                                                                                                                                                                                                                                                                                                                                  |
+| General          | Observability: Ray Dashboards                        | Ray provides a very nice dashboard for different types of views, such as monitoring resource utilization, monitoring job status, logs, and error messages for tasks and actors, as well as monitoring Ray Serve applications. For more details, see [here](https://docs.ray.io/en/latest/ray-observability/getting-started.html).                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Use cases        | Companies moving to Ray                              | There are public sessions that talk about how [Amazon](https://www.youtube.com/watch?v=u1XqELIRabI) performed an exabyte-scale migration from Spark to Ray, and how Instacart is [building their ML platform](https://www.youtube.com/watch?v=VTqM16UGs44) as well as [scaling ML fulfillment](https://www.youtube.com/watch?v=3t26ucTy0Rs&t=1s) on Ray                                                                                                                                                                                                                                                                                                                                                                                  |
+
+
+## Usage
 Once this setup is complete, we can interact with the Vicuna 13B (16K) model in one of the two ways.
 1. Streamlit in SPCS app: 
 ![Streamlit on SPCS](images/llm_spcs_ray.mov.gif?raw=true "Streamlit on SPCS") Go through the instructions below to set it up. This streamlit app also features a streamlit feedback component so that users can provide feedback on the LLM output. The feedback is stored in a snowflake table and the results can be seen in the Model Monitoring table within Streamlit UI.
@@ -45,13 +64,15 @@ Note that this setup has been tested on MacOS Ventura 13.6.
 3. Update REGISTRY_URL_BASE in `bin/do_login.sh`. Once updated, please run `sh bin/do_login.sh` to login into docker.
 4. Update following variables in `configure_project.sh`.
     ```
-    repository_url="sfsenorthamerica-fcto-spc.registry.snowflakecomputing.com/plakhanpal/vicuna13bonrayserve/llm_repo"
-    database="plakhanpal"
+    #these variables definitely need to be changed
+    repository_url="myaccount.registry.snowflakecomputing.com/mydb/vicuna13bonrayserve/llm_repo"
+    database="mydb"
     schema="vicuna13bonrayserve"
     spec_stage="spec_stage"
     hf_token="X"
     snowsql_connection_name=fcto
-    
+
+    #these variables are good enough for the Vicuna model on Ray Serve in SPCS. No need to change
     num_ray_workers=0
     num_additional_special_ray_workers_for_ray_serve=2
     ray_head_node_type=GPU_3
