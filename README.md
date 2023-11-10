@@ -1,7 +1,7 @@
 # Ray open source setup in SPCS
 This repo automates the setup of [Ray](https://docs.ray.io/en/latest/index.html) on Snowpark Container Services. It also loads the Vicuna13B model, which has a context length of 16K tokens as a Ray Serve API on SPCS.  This model needs a lot of GPU memory while inferencing, which cannot be served on easily available GPU infrastructure. The 8 GPUs are not coming from a single expensive GPU_10 node, infact, there are two smaller GPU7 nodes, each having 4 GPUs, which are making a Ray cluster connected to a single GPU3 Ray head node. This way, we can scale with smaller instances with GPUs whenever we have high GPU memory needs. 
 
-In the GIF below, see how big the prompt is which is being fed into the Ray Serve API deployed on SPCS, with 8 GPUs working in parallel. The prompt is available in this github here: ![Prompt](sample_prompt.txt)
+In the GIF below, the 6340 word prompt from `sample_prompt.txt` is being fed into the Ray Serve API deployed on SPCS, with 8 GPUs working in parallel. As a reminder, this model accepts upto 16K tokens and this setup will process the prompt with multiple GPUs in parallel.
 
 ![Streamlit on SPCS](images/llm_spcs_ray.mov.gif?raw=true "Streamlit on SPCS")
 
