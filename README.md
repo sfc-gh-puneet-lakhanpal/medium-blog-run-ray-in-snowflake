@@ -9,6 +9,10 @@ The following screenshot shows a static image of the GPUs in action.
 
 ![Ray on SPCS](images/ray_dashboard_once_setup.png?raw=true "Ray on SPCS") 
 
+The Ray Serve API on SPCS is shown below.
+
+![Ray Serve API on SPCS](images/ray_serve_api.png?raw=true "Ray Serve API on SPCS") 
+
 ## Motivation
 
 The Ray open source community and the managed Ray offering, Anyscale, have published a plethora of blog posts on why Ray makes sense for distributing workloads. The following table highlights a few of the posts that made me fall in love with Ray, and motivated me to bring Ray into SPCS.
