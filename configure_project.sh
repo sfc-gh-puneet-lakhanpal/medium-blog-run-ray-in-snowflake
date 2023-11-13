@@ -568,6 +568,8 @@ if [ "$deploy_streamlit_only" = "true" ]
 then
     echo "Starting: Dropping streamlit service if exists."
     drop_streamlit_service_func $database $schema $snowsql_connection_name
+    echo "Starting: Pushing streamlit image."
+    docker_buildandpush_plus_upload_spec_file $dir_path_streamlit $dir_path_project_root
     echo "Starting: Creating streamlit feedback table and streamlit service."
     create_streamlit_feedback_table_if_not_exists $database $schema $streamlit_feedback_table_name $snowsql_connection_name
     start_spcs_service $database $schema streamlit $ray_head_compute_pool_name 1 $spec_stage streamlit.yaml $snowsql_connection_name

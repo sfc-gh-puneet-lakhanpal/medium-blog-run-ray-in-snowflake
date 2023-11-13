@@ -51,16 +51,16 @@ def _submit_feedback(user_response, **kwargs):
     score = scores.get(user_response["score"])
     comment = ""
     if user_response["text"] is not None:
-        comment = (user_response["text"]).replace("'","\\'")
+        comment = (user_response["text"]).replace("$","")
     if "run_id" in kwargs:
         run_id = str(kwargs['run_id'])
     if "prompt" in kwargs:
-        prompt = (kwargs['prompt']).strip().replace("'","\\'")
+        prompt = (kwargs['prompt']).strip().replace("$","")
     if "response" in kwargs:
-        response = (kwargs['response']).strip().replace("'","\\'")
+        response = (kwargs['response']).strip().replace("$","")
     feedback_sql = f"""
         insert into {SNOW_FEEDBACK_TABLE} (RUN_ID, TIMESTAMP, USER_PROMPT, ASSISTANT_RESPONSE, SCORE, COMMENT)
-        values ('{run_id}', CURRENT_TIMESTAMP, '{prompt}', '{response}', {score}, '{comment}')
+        values ('{run_id}', CURRENT_TIMESTAMP, $${prompt}$$, $${response}$$, {score}, $${comment}$$)
     """
     print(feedback_sql)
     feedback_inserted_results = snowpark_session.sql(feedback_sql).collect()
