@@ -52,7 +52,13 @@ Note that this setup has been tested on MacOS Ventura 13.6.
     create image repository if not exists LLM_REPO;
     SHOW IMAGE REPOSITORIES IN SCHEMA;
     ```
-    Note down the result of the last statement.
+    Note down the result of the last statement. Using accountadmin role, execute the following statement:
+    ```
+    CREATE SECURITY INTEGRATION snowservices_ingress_oauth
+        TYPE=oauth
+        OAUTH_CLIENT=snowservices_ingress
+        ENABLED=true;
+    ```
 2. Setup snowsql and give the connection a name. In my case, I added the following code block to the `~/.snowsql/config`, with the connection name as fcto.
     ```
     [connections.fcto]
@@ -64,6 +70,7 @@ Note that this setup has been tested on MacOS Ventura 13.6.
     schemaname = XXX
     rolename = XXX
     ```
+    NOTE: DO NOT USE credentials for `ACCOUNTADMIN`, `SECURITYADMIN`, and `ORGADMIN` roles. As noted [here](https://docs.snowflake.com/en/LIMITEDACCESS/snowpark-containers/tutorials/common-setup#create-snowflake-objects), Snowpark Container Services use Snowflake OAuth for ingress. In the current implementation, privileged roles (including ACCOUNTADMIN, SECURITYADMIN, and ORGADMIN) cannot be used with OAuth.
 3. Update REGISTRY_URL_BASE in `bin/do_login.sh`. Once updated, please run `sh bin/do_login.sh` to login into docker.
 4. Update following variables in `configure_project.sh`.
     ```
