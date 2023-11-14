@@ -37,6 +37,7 @@ suspend_all="false"
 drop_all="false"
 drop_services_only="false"
 get_public_endpoints="false"
+show_compute_pools_prefix="compute pools"
 ACTION=""
 for arg in "$@"
 do
@@ -67,7 +68,7 @@ case $ACTION in
    deploy_streamlit_only="true"
     ;;
 "deploy_all")
-    update_params="false"
+    update_params="true"
     push_images="true"
     deploy_services="true"
     deploy_model_on_ray_serve="true"
@@ -281,6 +282,21 @@ get_public_endpoints_for_service(){
     echo "Public endpoints for $service_name: $public_endpoints"
 }
 
+check_status_of_snowflake_object(){
+    local database=${1}
+    local schema=${2}
+    local object_name=${3}
+    local object_prefix=${4}
+    local snow_connection_name=${5}
+    object_status=$(snowsql -c $snow_connection_name -q "call $database.$schema.does_snowflake_object_exist('$database', '$schema', '$object_name', '$object_prefix')" -o friendly=False -o header=False -o output_format=plain -o timing=False)
+    if [ $object_status = 0 ]
+    then
+        echo "no"
+    else
+        echo "yes" 
+    fi
+}
+
 start_spcs_compute_pool() {
     local database=${1}
     local schema=${2}
@@ -303,7 +319,6 @@ start_spcs_compute_pool() {
             AUTO_SUSPEND_SECS = $keep_alive_secs;
         "
 }
-
 
 start_spcs_service() {
     local database=${1}
@@ -517,6 +532,47 @@ then
     echo "Completed: Actual values have been replaced with placeholder values in config files, spec files, sql helper files and makefiles!"
 fi
 
+if [ "$deploy_services" = "true" ]
+then
+    echo "Starting: Installing SPCS utils."
+    create_spcs_utils_using_snowsql $configure_project_helper_sql_file_name $snowsql_connection_name
+    echo "Starting: Starting up compute pools."
+    start_spcs_compute_pool $database $schema $ray_head_compute_pool_name 1 $ray_head_node_type $default_compute_pool_keep_alive_secs $snowsql_connection_name
+    echo "Starting: Checking status of compute pool $ray_head_compute_pool_name."
+    exists=$(check_status_of_snowflake_object $database $schema $ray_head_compute_pool_name "${show_compute_pools_prefix}" $snowsql_connection_name)
+    if [ $exists = "no" ]
+    then
+        echo "Completed: Compute pool $ray_head_compute_pool_name does not exist."
+        exit 1
+    fi
+    echo "Completed: Compute pool $ray_head_compute_pool_name exists."
+    if [ $num_ray_workers -gt 0 ]
+    then
+        start_spcs_compute_pool $database $schema $ray_worker_compute_pool_name $num_ray_workers $ray_worker_node_type $default_compute_pool_keep_alive_secs $snowsql_connection_name
+        echo "Starting: Checking status of compute pool $ray_worker_compute_pool_name."
+        exists=$(check_status_of_snowflake_object $database $schema $ray_worker_compute_pool_name "${show_compute_pools_prefix}" $snowsql_connection_name)
+        if [ $exists = "no" ]
+        then
+            echo "Completed: Compute pool $ray_worker_compute_pool_name does not exist."
+            exit 1
+        fi
+        echo "Completed: Compute pool $ray_worker_compute_pool_name exists."    
+    fi
+    if [ $num_additional_special_ray_workers_for_ray_serve -gt 0 ]
+    then
+        start_spcs_compute_pool $database $schema $rayserve_compute_pool_name $num_additional_special_ray_workers_for_ray_serve $special_ray_worker_for_ray_serve_node_type $default_compute_pool_keep_alive_secs $snowsql_connection_name
+        echo "Starting: Checking status of compute pool $rayserve_compute_pool_name."
+        exists=$(check_status_of_snowflake_object $database $schema $rayserve_compute_pool_name "${show_compute_pools_prefix}" $snowsql_connection_name)
+        if [ $exists = "no" ]
+        then
+            echo "Completed: Compute pool $rayserve_compute_pool_name does not exist."
+            exit 1
+        fi
+        echo "Completed: Compute pool $rayserve_compute_pool_name exists."
+    fi
+    echo "Completed: Starting up compute pools."
+fi
+
 if [ "$push_images" = "true" ]
 then
     echo "Started: Building docker images, pushing to Snowflake image registry and uploading spec files!"
@@ -534,18 +590,6 @@ fi
 
 if [ "$deploy_services" = "true" ]
 then
-    echo "Starting: Installing SPCS utils."
-    create_spcs_utils_using_snowsql $configure_project_helper_sql_file_name $snowsql_connection_name
-    echo "Starting: Starting up compute pools."
-    start_spcs_compute_pool $database $schema $ray_head_compute_pool_name 1 $ray_head_node_type $default_compute_pool_keep_alive_secs $snowsql_connection_name
-    if [ $num_ray_workers -gt 0 ]
-    then
-        start_spcs_compute_pool $database $schema $ray_worker_compute_pool_name $num_ray_workers $ray_worker_node_type $default_compute_pool_keep_alive_secs $snowsql_connection_name
-    fi
-    if [ $num_additional_special_ray_workers_for_ray_serve -gt 0 ]
-    then
-        start_spcs_compute_pool $database $schema $rayserve_compute_pool_name $num_additional_special_ray_workers_for_ray_serve $special_ray_worker_for_ray_serve_node_type $default_compute_pool_keep_alive_secs $snowsql_connection_name
-    fi
     echo "Starting: Creating Container volumes."
     create_spcs_container_volumes_if_not_exists $database $schema $snowsql_connection_name
     echo "Starting: Creating streamlit feedback table."

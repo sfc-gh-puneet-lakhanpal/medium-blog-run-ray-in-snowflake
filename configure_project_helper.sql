@@ -27,3 +27,23 @@ def run(session, database_name, schema_name, service_name):
     except Exception as e:
         return "not ready"
 $$;
+
+CREATE OR REPLACE PROCEDURE does_snowflake_object_exist(database_name string, schema_name string, object_name string, object_prefix string)
+RETURNS VARIANT
+LANGUAGE PYTHON
+RUNTIME_VERSION = '3.8'
+PACKAGES = ('snowflake-snowpark-python')
+HANDLER = 'run'
+execute as caller
+AS
+$$
+def run(session, database_name, schema_name, object_name, object_prefix):
+    _ = session.sql(f"use database {database_name}").collect()
+    _ = session.sql(f"use schema {schema_name}").collect()
+    upper_object_prefix = str(object_prefix).upper()
+    upper_object_name = str(object_name).upper()
+    show_objects_sql = f"show {upper_object_prefix} like '{upper_object_name}%'"
+    objects_snowdf = session.sql(show_objects_sql)
+    object_results = objects_snowdf.collect()
+    return len(object_results)
+$$;

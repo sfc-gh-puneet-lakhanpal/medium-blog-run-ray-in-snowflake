@@ -1,6 +1,6 @@
 //initialize objects
-create database if not exists MYDB;
-use database MYDB;
+create database if not exists mydb;
+use database mydb;
 create schema if not exists vicuna13bonrayserve;
 use schema vicuna13bonrayserve;
 create stage if not exists SPEC_STAGE;
@@ -40,6 +40,12 @@ call get_service_public_endpoints('MYDB', 'vicuna13bonrayserve', 'spcs_ray_custo
 
 //see streamlit
 call get_service_public_endpoints('MYDB', 'vicuna13bonrayserve', 'streamlit');
+
+//check if object exists in snowflake
+call does_snowflake_object_exist('MYDB', 'vicuna13bonrayserve', 'VICUNA13B_RAY_HEAD_POOL', 'compute pools');
+
+call does_snowflake_object_exist('MYDB', 'vicuna13bonrayserve', 'VICUNA13B_RAY_SERVE_POOL', 'compute pools');
+
 
 //check logs if interested
 //ray head
